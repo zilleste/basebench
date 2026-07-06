@@ -5,6 +5,7 @@ import { Decoration, EditorView, keymap, placeholder } from "@codemirror/view";
 const PROVIDERS = {
   fireworks: {
     label: "Fireworks",
+    keyPrefix: "fw_",
     endpoint: "https://api.fireworks.ai/inference/v1/completions",
     defaultModel: "accounts/fireworks/models/kimi-k2p6",
     modelHints: [
@@ -83,13 +84,14 @@ const PROVIDERS = {
   },
   together: {
     label: "Together",
+    keyPrefix: "tgp_",
     endpoint: "https://api.together.xyz/v1/completions",
     defaultModel: "Qwen/Qwen3.5-9B",
     modelHints: [
       "Qwen/Qwen3.5-9B",
       "Qwen/Qwen3.5-35B-A3B",
       "Qwen/Qwen3.5-397B-A17B",
-      "moonshotai/Kimi-K2-Base",
+      "moonshotai/Kimi-K2.6",
     ],
     maxTopLogprobs: 20,
     supportsStreaming: false,
@@ -123,8 +125,9 @@ const PROVIDERS = {
     },
     parseScore(json, text) {
       const prompt = Array.isArray(json?.prompt) ? json.prompt[0] : null;
+      const choice = Array.isArray(json?.choices) ? json.choices[0] : null;
       return {
-        tokens: extractLegacyTokens(prompt?.logprobs, text),
+        tokens: extractLegacyTokens(prompt?.logprobs || choice?.logprobs, text),
         usage: json?.usage ?? null,
       };
     },
@@ -414,7 +417,7 @@ async function scoreText({ force }) {
       model: params.model,
       text,
       topLogprobs: params.topLogprobs,
-    }));
+    }), undefined, { providerId: el.provider.value, model: params.model });
     const parsed = provider.parseScore(json, text);
     view.dispatch({ effects: setScoreEffect.of(parsed.tokens) });
     putCache(cacheKey, { tokens: parsed.tokens, usage: parsed.usage });
@@ -592,7 +595,13 @@ async function streamOneSample(provider, key, params, promptCacheKey, job, index
     });
     if (!response.ok) {
       const detail = await response.text();
-      throw new Error(`${response.status} ${response.statusText}: ${detail.slice(0, 300)}`);
+      throw new Error(formatProviderError({
+        providerId: el.provider.value,
+        model: params.model,
+        status: response.status,
+        statusText: response.statusText,
+        detail: parseErrorDetail(detail),
+      }));
     }
     await readSSE(response, (json) => {
       if (activeSampleJob?.id !== job.id) return;
@@ -641,7 +650,7 @@ async function sampleNonStreaming(provider, key, params, cacheKey) {
       topP: params.topP,
       minP: params.minP,
       topLogprobs: params.topLogprobs,
-    }), controller.signal);
+    }), controller.signal, { providerId: el.provider.value, model: params.model });
     if (activeSampleJob?.id !== job.id) return;
     const samples = provider.parseSample(json);
     putCache(cacheKey, { samples });
@@ -778,7 +787,7 @@ async function readSSE(response, onData, signal) {
   }
 }
 
-async function postJson(url, headers, body, signal) {
+async function postJson(url, headers, body, signal, context = {}) {
   const response = await fetch(url, {
     method: "POST",
     headers,
@@ -794,12 +803,35 @@ async function postJson(url, headers, body, signal) {
   }
   if (!response.ok) {
     const detail = json?.error?.message || json?.message || text || response.statusText;
-    throw new Error(`${response.status} ${response.statusText}: ${detail}`);
+    throw new Error(formatProviderError({
+      ...context,
+      status: response.status,
+      statusText: response.statusText,
+      detail,
+    }));
   }
   if (!json) {
     throw new Error("The provider returned an empty response.");
   }
   return json;
+}
+
+function parseErrorDetail(text) {
+  if (!text) return "";
+  try {
+    const json = JSON.parse(text);
+    return json?.error?.message || json?.message || text;
+  } catch {
+    return text;
+  }
+}
+
+function formatProviderError({ providerId, model, status, statusText, detail }) {
+  const cleanDetail = String(detail || statusText || "").slice(0, 500);
+  if (providerId === "together" && /non-serverless|dedicated endpoint/i.test(cleanDetail)) {
+    return `${status} ${statusText}: Together requires a dedicated endpoint for ${model}. Create and start that endpoint in Together, then paste its generated endpoint model name into Model, or choose a serverless Together model.`;
+  }
+  return `${status} ${statusText}: ${cleanDetail}`;
 }
 
 function buildScoreDecorations(tokens, activeIndex) {
@@ -838,11 +870,11 @@ function extractLegacyTokens(logprobs, sourceText) {
   let cursor = 0;
   for (let index = 0; index < rawTokens.length; index += 1) {
     const explicitOffset = finiteNumber(rawOffsets[index]);
-    const offset = explicitOffset ?? cursor;
-    if (offset >= sourceText.length) break;
-    const inferredEnd = Math.min(sourceText.length, offset + String(rawTokens[index] ?? "").length);
-    const nextOffset = nextSourceOffset(rawOffsets, index, sourceText.length) ?? inferredEnd;
     const fallback = rawTokens[index] ?? "";
+    const offset = explicitOffset != null && explicitOffset >= 0 ? explicitOffset : cursor;
+    if (offset >= sourceText.length) break;
+    const inferredEnd = Math.min(sourceText.length, offset + String(fallback).length);
+    const nextOffset = nextSourceOffset(rawOffsets, index, sourceText.length) ?? inferredEnd;
     const text = sourceText.slice(offset, nextOffset) || fallback;
     cursor = offset + text.length;
     const logprob = nullableNumber(rawLogprobs[index]);
@@ -887,10 +919,10 @@ function tokenFromParts(index, text, offset, end, tokenId, logprob, topLogprobs)
 
 function nextSourceOffset(offsets, index, sourceLength) {
   const current = finiteNumber(offsets[index]);
-  if (current == null) return null;
+  if (current == null || current < 0) return null;
   for (let i = index + 1; i < offsets.length; i += 1) {
     const candidate = finiteNumber(offsets[i]);
-    if (candidate != null && candidate > current) {
+    if (candidate != null && candidate >= 0 && candidate > current) {
       return Math.min(sourceLength, candidate);
     }
   }
@@ -1135,8 +1167,23 @@ function requireKey(options = {}) {
     if (!options.quiet) throw new Error("Paste a provider API key first.");
     return "";
   }
+  const matchingProvider = providerForKey(key);
+  if (matchingProvider && matchingProvider !== el.provider.value) {
+    const provider = PROVIDERS[matchingProvider];
+    if (!options.quiet) {
+      throw new Error(`That looks like a ${provider.label} key. Switch Provider to ${provider.label} or paste a ${getProvider().label} key.`);
+    }
+    return "";
+  }
   sessionStorage.setItem(keyStorageName(), key);
   return key;
+}
+
+function providerForKey(key) {
+  for (const [id, provider] of Object.entries(PROVIDERS)) {
+    if (provider.keyPrefix && key.startsWith(provider.keyPrefix)) return id;
+  }
+  return "";
 }
 
 function getDocumentId() {

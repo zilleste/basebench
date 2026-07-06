@@ -67,4 +67,6 @@ Fireworks is the primary target. Useful model IDs:
 
 Together is included as a second adapter because its completions API documents prompt logprobs via `echo: true` + `logprobs`.
 
+Together's `moonshotai/Kimi-K2-Base` catalog model is not currently in the self-serve dedicated endpoint model list, despite API errors that suggest creating a dedicated endpoint for it. The model picker does list smaller base/pretrained options such as `Qwen/Qwen3-30B-A3B-Base`, `Qwen/Qwen3-14B-Base`, `Qwen/Qwen3-8B-Base`, `meta-llama/Meta-Llama-3.1-8B`, and Gemma `*-pt` models. After creating a Together dedicated endpoint, use the generated endpoint `name` as the Basebench model value.
+
 API keys are stored in `sessionStorage`, not committed or persisted across browser sessions. Static BYOK means each user pays with their own key.
