@@ -382,15 +382,17 @@ select {
 
 .continuations {
   min-height: 0;
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   overflow: auto;
   overscroll-behavior: contain;
   padding: 12px;
+  scrollbar-gutter: stable;
 }
 
 .continuation {
+  flex: 0 0 auto;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fffdf7;
