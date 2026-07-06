@@ -1,0 +1,21 @@
+{
+  "name": "basebench",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zilleste/basebench.git"
+  },
+  "dependencies": {
+    "@codemirror/commands": "6.10.0",
+    "@codemirror/state": "6.7.0",
+    "@codemirror/view": "6.43.6"
+  },
+  "devDependencies": {
+    "esbuild": "0.27.0"
+  }
+}

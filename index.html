@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Base Model Workbench</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">B</span>
+          <div>
+            <h1>Base Model Workbench</h1>
+            <p>Inline surprisal and cursor forks.</p>
+          </div>
+        </div>
+
+        <form class="provider-strip" id="settings-form" autocomplete="off">
+          <label class="field provider-field">
+            <span>Provider</span>
+            <select id="provider">
+              <option value="fireworks">Fireworks</option>
+              <option value="together">Together</option>
+            </select>
+          </label>
+
+          <label class="field model-field">
+            <span>Model</span>
+            <input id="model" autocomplete="off" spellcheck="false" />
+          </label>
+
+          <label class="field key-field">
+            <span>API key</span>
+            <input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-..." />
+          </label>
+
+          <button class="icon-button" type="button" id="toggle-key" title="Show API key" aria-label="Show API key">
+            <span aria-hidden="true">◐</span>
+          </button>
+        </form>
+      </header>
+
+      <section class="status-line" aria-live="polite">
+        <div id="status">Ready.</div>
+        <div class="metrics" id="metrics"></div>
+      </section>
+
+      <section class="workbench">
+        <section class="editor-pane" aria-label="Draft editor">
+          <div class="pane-header">
+            <h2>Draft</h2>
+            <div class="toolbar">
+              <div class="legend" aria-label="Surprisal legend">
+                <span class="legend-item easy">likely</span>
+                <span class="legend-item mid">tense</span>
+                <span class="legend-item hard">strange</span>
+              </div>
+              <button type="button" id="load-sample">Sample</button>
+              <button type="button" id="score-text" class="primary">Score</button>
+            </div>
+          </div>
+          <div id="editor" class="editor-host"></div>
+        </section>
+
+        <aside class="side-pane">
+          <section class="completion-pane" aria-label="Cursor completions">
+            <div class="pane-header">
+              <h2>Completions</h2>
+              <div class="button-row">
+                <button type="button" id="abort-sampling" disabled>Abort</button>
+                <button type="button" id="resample" disabled>Resample</button>
+              </div>
+            </div>
+            <div class="completion-meta" id="completion-meta"></div>
+            <div class="alternatives" id="alternatives"></div>
+            <div class="continuations" id="continuations"></div>
+          </section>
+
+          <section class="controls-pane" aria-label="Sampling controls">
+            <div class="pane-header">
+              <h2>Settings</h2>
+              <label class="switch">
+                <input id="auto-sample" type="checkbox" checked />
+                <span>Auto</span>
+              </label>
+            </div>
+            <div class="controls-grid">
+              <label class="field">
+                <span>Forks</span>
+                <input id="sample-count" type="number" min="1" max="8" step="1" value="4" />
+              </label>
+              <label class="field">
+                <span>Tokens</span>
+                <input id="sample-tokens" type="number" min="1" max="200" step="1" value="48" />
+              </label>
+              <label class="field">
+                <span>Temp</span>
+                <input id="temperature" type="number" min="0" max="2" step="0.05" value="1.05" />
+              </label>
+              <label class="field">
+                <span>Top p</span>
+                <input id="top-p" type="number" min="0" max="1" step="0.01" value="0.95" />
+              </label>
+              <label class="field">
+                <span>Min p</span>
+                <input id="min-p" type="number" min="0" max="1" step="0.001" value="0.01" />
+              </label>
+              <label class="field">
+                <span>Top logprobs</span>
+                <input id="top-logprobs" type="number" min="1" max="20" step="1" value="5" />
+              </label>
+            </div>
+            <div class="cache-row">
+              <span id="cache-status">Cache ready.</span>
+              <button type="button" id="clear-cache">Clear</button>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <template id="continuation-template">
+      <article class="continuation">
+        <header>
+          <span class="continuation-index"></span>
+          <span class="continuation-logprob"></span>
+        </header>
+        <p></p>
+      </article>
+    </template>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
