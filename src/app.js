@@ -253,6 +253,103 @@ const PROVIDERS = {
       }));
     },
   },
+  novita: {
+    label: "Novita",
+    keyPrefix: "sk_",
+    endpoint: "https://api.novita.ai/openai/completions",
+    defaultModel: "baidu/ernie-4.5-vl-424b-a47b",
+    modelCatalog: [
+      {
+        group: "Best available ERNIE routes",
+        lab: "Baidu",
+        label: "ERNIE 4.5 VL 424B A47B",
+        value: "baidu/ernie-4.5-vl-424b-a47b",
+        note: "Largest active ERNIE route in Novita's direct catalog with completions support; multimodal/chat-tuned, not Base-PT.",
+      },
+      {
+        group: "Best available ERNIE routes",
+        lab: "Baidu",
+        label: "ERNIE 4.5 21B A3B",
+        value: "baidu/ernie-4.5-21B-a3b",
+        note: "Active and cheaper ERNIE completions route for quick testing.",
+      },
+      {
+        group: "Experimental base routing",
+        lab: "Baidu",
+        label: "ERNIE 4.5 300B A47B Base PT",
+        value: "baidu/ERNIE-4.5-300B-A47B-Base-PT",
+        note: "Hugging Face lists Novita for this true base checkpoint, but Novita's direct API returned model not found in testing.",
+      },
+      {
+        group: "Experimental base routing",
+        lab: "Baidu",
+        label: "ERNIE 4.5 300B A47B Paddle",
+        value: "baidu/ernie-4.5-300b-a47b-paddle",
+        note: "Novita lists this completions route, but it returned model not available in testing.",
+      },
+      {
+        group: "Other Novita completion controls",
+        lab: "DeepSeek",
+        label: "DeepSeek V3.1",
+        value: "deepseek/deepseek-v3.1",
+        note: "Active Novita completions route; older but useful as a cheap sanity check.",
+      },
+      {
+        group: "Other Novita completion controls",
+        lab: "Baichuan",
+        label: "Baichuan M2 32B",
+        value: "baichuan/baichuan-m2-32b",
+        note: "Active Novita completions route; small but inexpensive.",
+      },
+    ],
+    maxTopLogprobs: 5,
+    supportsStreaming: false,
+    headers(key) {
+      return {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      };
+    },
+    scoreBody({ model, text, topLogprobs }) {
+      return {
+        model,
+        prompt: text,
+        max_tokens: 1,
+        temperature: 0,
+        echo: true,
+        logprobs: clampInt(topLogprobs, 1, this.maxTopLogprobs),
+      };
+    },
+    sampleBody({ model, prefix, count, maxTokens, temperature, topP, topLogprobs }) {
+      return {
+        model,
+        prompt: prefix,
+        n: clampInt(count, 1, 8),
+        max_tokens: clampInt(maxTokens, 1, 200),
+        temperature: clampNumber(temperature, 0, 2),
+        top_p: clampNumber(topP, 0, 1),
+        logprobs: clampInt(topLogprobs, 1, this.maxTopLogprobs),
+      };
+    },
+    parseScore(json, text) {
+      const prompt = Array.isArray(json?.prompt) ? json.prompt[0] : null;
+      const choice = Array.isArray(json?.choices) ? json.choices[0] : null;
+      return {
+        tokens: extractLegacyTokens(choice?.logprobs || prompt?.logprobs, text),
+        usage: json?.usage ?? null,
+      };
+    },
+    parseSample(json) {
+      const choices = Array.isArray(json?.choices) ? json.choices : [];
+      return choices.map((choice, index) => ({
+        index,
+        text: choice?.text ?? "",
+        avgLogprob: averageLogprob(choice?.logprobs?.token_logprobs),
+        firstAlternatives: normalizeTopLogprobs(choice?.logprobs?.top_logprobs?.[0]),
+        done: true,
+      }));
+    },
+  },
 };
 
 const SAMPLE_TEXT = "The rain had been falling upward for eleven minutes before Mara looked out the kitchen window and realized the city was holding its breath.";
@@ -952,6 +1049,15 @@ function formatProviderError({ providerId, model, status, statusText, detail }) 
   const cleanDetail = String(detail || statusText || "").slice(0, 500);
   if (providerId === "together" && /non-serverless|dedicated endpoint/i.test(cleanDetail)) {
     return `${status} ${statusText}: Together requires a dedicated endpoint for ${model}. Create and start that endpoint in Together, then paste its generated endpoint model name into Model, or choose a serverless Together model.`;
+  }
+  if (providerId === "novita" && /not enough balance/i.test(cleanDetail)) {
+    return `${status} ${statusText}: Novita says this API key has no available balance. Top up Novita credit, then retry the same model.`;
+  }
+  if (providerId === "novita" && /model not found/i.test(cleanDetail)) {
+    return `${status} ${statusText}: Novita did not find ${model}. The ERNIE Base-PT route appears on Hugging Face, but was not exposed through Novita's direct OpenAI-compatible API in testing. Try an active Novita preset such as ERNIE 4.5 VL 424B A47B.`;
+  }
+  if (providerId === "novita" && /model not available/i.test(cleanDetail)) {
+    return `${status} ${statusText}: Novita lists ${model}, but it is not currently serving. Try an active Novita preset such as ERNIE 4.5 VL 424B A47B or ERNIE 4.5 21B A3B.`;
   }
   return `${status} ${statusText}: ${cleanDetail}`;
 }
