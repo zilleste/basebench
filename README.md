@@ -20,12 +20,19 @@ The build writes the static deployable site to `dist/` and also refreshes the lo
 
 ## Cloudflare Pages
 
-Use Pages Git integration against this repository:
+For classic Pages Git integration, use:
 
 - Framework preset: None
 - Build command: `pnpm run build`
 - Build output directory: `dist`
 - Root directory: leave blank
+
+For a Workers static-assets project, use:
+
+- Build command: `pnpm run build`
+- Deploy command: `npx wrangler deploy`
+
+The checked-in `wrangler.jsonc` points Wrangler at `dist/`. Without that file, Wrangler may infer `.` as the assets directory and try to upload `node_modules`.
 
 No provider API keys should be configured in Cloudflare. Basebench is BYOK: keys are entered by each user in the browser and stored only in `sessionStorage`.
 
