@@ -59,14 +59,16 @@ Open <http://192.168.64.100:4173/index.html> from the host-side browser.
 
 ## Provider Notes
 
-Fireworks is the primary target. Useful model IDs:
+Fireworks is the primary target. The model picker favors the least-tuned practical pay-per-token routes that still fit Basebench's completions + prompt-logprobs workflow:
 
 - `accounts/fireworks/models/kimi-k2p6`
 - `accounts/fireworks/models/glm-5p2`
-- `accounts/fireworks/models/kimi-k2p7-code`
+- `accounts/fireworks/models/deepseek-v4-pro`
+- `accounts/fireworks/models/minimax-m3`
+- `accounts/fireworks/models/qwen3p7-plus`
 
-Together is included as a second adapter because its completions API documents prompt logprobs via `echo: true` + `logprobs`.
+Together is included as a second adapter because its completions API documents prompt logprobs via `echo: true` + `logprobs`. The curated Together presets currently include `Qwen/Qwen3.5-397B-A17B`, `zai-org/GLM-5.2`, `deepseek-ai/DeepSeek-V4-Pro`, `moonshotai/Kimi-K2.6`, `MiniMaxAI/MiniMax-M3`, `google/gemma-4-31B-it`, and a few smaller Qwen controls.
 
-Together's `moonshotai/Kimi-K2-Base` catalog model is not currently in the self-serve dedicated endpoint model list, despite API errors that suggest creating a dedicated endpoint for it. The model picker does list smaller base/pretrained options such as `Qwen/Qwen3-30B-A3B-Base`, `Qwen/Qwen3-14B-Base`, `Qwen/Qwen3-8B-Base`, `meta-llama/Meta-Llama-3.1-8B`, and Gemma `*-pt` models. After creating a Together dedicated endpoint, use the generated endpoint `name` as the Basebench model value.
+Actual base checkpoints remain scarce on serverless pay-per-token inference. Together's `moonshotai/Kimi-K2-Base` catalog model is not currently in the self-serve dedicated endpoint model list, despite API errors that suggest creating a dedicated endpoint for it. Some recent open-weight families are omitted from the preset picker when the available hosted route is chat-only, deployment-only, or lacks prompt-token logprobs. After creating a Together dedicated endpoint, use the generated endpoint `name` as the Basebench model value.
 
 API keys are stored in `sessionStorage`, not committed or persisted across browser sessions. Static BYOK means each user pays with their own key.

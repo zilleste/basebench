@@ -8,11 +8,63 @@ const PROVIDERS = {
     keyPrefix: "fw_",
     endpoint: "https://api.fireworks.ai/inference/v1/completions",
     defaultModel: "accounts/fireworks/models/kimi-k2p6",
-    modelHints: [
-      "accounts/fireworks/models/kimi-k2p6",
-      "accounts/fireworks/models/glm-5p2",
-      "accounts/fireworks/models/kimi-k2p7-code",
-      "accounts/fireworks/models/gpt-oss-120b",
+    modelCatalog: [
+      {
+        group: "Least-tuned practical picks",
+        lab: "Moonshot",
+        label: "Kimi K2.6",
+        value: "accounts/fireworks/models/kimi-k2p6",
+        note: "General Kimi route; Fireworks marks it as kind Base model, but it is still an agentic/post-trained compromise.",
+      },
+      {
+        group: "Least-tuned practical picks",
+        lab: "Z.ai",
+        label: "GLM 5.2",
+        value: "accounts/fireworks/models/glm-5p2",
+        note: "Latest GLM flagship route with completions/logprobs support.",
+      },
+      {
+        group: "Least-tuned practical picks",
+        lab: "DeepSeek",
+        label: "DeepSeek V4 Pro",
+        value: "accounts/fireworks/models/deepseek-v4-pro",
+        note: "Latest large DeepSeek route with a completions-compatible Fireworks id.",
+      },
+      {
+        group: "Least-tuned practical picks",
+        lab: "MiniMax",
+        label: "MiniMax M3",
+        value: "accounts/fireworks/models/minimax-m3",
+        note: "Latest MiniMax serverless route in the Fireworks catalog.",
+      },
+      {
+        group: "Least-tuned practical picks",
+        lab: "Qwen",
+        label: "Qwen3.7 Plus",
+        value: "accounts/fireworks/models/qwen3p7-plus",
+        note: "Current large Qwen route on Fireworks; tuned, but accessible pay-per-token.",
+      },
+      {
+        group: "Other useful controls",
+        lab: "OpenAI",
+        label: "gpt-oss 120B",
+        value: "accounts/fireworks/models/gpt-oss-120b",
+        note: "Open-weight GPT-OSS route; useful as a comparatively cheap control.",
+      },
+      {
+        group: "Other useful controls",
+        lab: "Moonshot",
+        label: "Kimi K2.7 Code",
+        value: "accounts/fireworks/models/kimi-k2p7-code",
+        note: "Newer Kimi checkpoint, but code-specialized and more tuned than K2.6.",
+      },
+      {
+        group: "Other useful controls",
+        lab: "Qwen",
+        label: "Qwen3 Coder 480B A35B",
+        value: "accounts/fireworks/models/qwen3-coder-480b-a35b-instruct",
+        note: "Large Qwen code-specialized checkpoint; not a base model, but good for comparison.",
+      },
     ],
     maxTopLogprobs: 5,
     supportsStreaming: true,
@@ -86,12 +138,71 @@ const PROVIDERS = {
     label: "Together",
     keyPrefix: "tgp_",
     endpoint: "https://api.together.xyz/v1/completions",
-    defaultModel: "Qwen/Qwen3.5-9B",
-    modelHints: [
-      "Qwen/Qwen3.5-9B",
-      "Qwen/Qwen3.5-35B-A3B",
-      "Qwen/Qwen3.5-397B-A17B",
-      "moonshotai/Kimi-K2.6",
+    defaultModel: "Qwen/Qwen3.5-397B-A17B",
+    modelCatalog: [
+      {
+        group: "Least-tuned practical picks",
+        lab: "Qwen",
+        label: "Qwen3.5 397B A17B",
+        value: "Qwen/Qwen3.5-397B-A17B",
+        note: "Largest Qwen route found with Together completions coverage.",
+      },
+      {
+        group: "Least-tuned practical picks",
+        lab: "Z.ai",
+        label: "GLM 5.2",
+        value: "zai-org/GLM-5.2",
+        note: "Latest GLM route in Together's catalog.",
+      },
+      {
+        group: "Least-tuned practical picks",
+        lab: "DeepSeek",
+        label: "DeepSeek V4 Pro",
+        value: "deepseek-ai/DeepSeek-V4-Pro",
+        note: "Latest large DeepSeek route exposed by Together.",
+      },
+      {
+        group: "Least-tuned practical picks",
+        lab: "Moonshot",
+        label: "Kimi K2.6",
+        value: "moonshotai/Kimi-K2.6",
+        note: "General Kimi K2.6 route; K2.7 Code is newer but more specialized.",
+      },
+      {
+        group: "Other useful controls",
+        lab: "MiniMax",
+        label: "MiniMax M3",
+        value: "MiniMaxAI/MiniMax-M3",
+        note: "Latest MiniMax route in Together's serverless catalog.",
+      },
+      {
+        group: "Other useful controls",
+        lab: "Qwen",
+        label: "Qwen3.7 Max",
+        value: "Qwen/Qwen3.7-Max",
+        note: "Newer Qwen flagship route; likely more chat/agent tuned than Qwen3.5 397B.",
+      },
+      {
+        group: "Other useful controls",
+        lab: "Google",
+        label: "Gemma 4 31B IT",
+        value: "google/gemma-4-31B-it",
+        note: "Current large Gemma route on Together; much smaller, but useful as an open-weight control.",
+      },
+      {
+        group: "Cheap controls",
+        lab: "Qwen",
+        label: "Qwen3.5 35B A3B",
+        value: "Qwen/Qwen3.5-35B-A3B",
+        note: "Cheaper Qwen control for quick iteration.",
+      },
+      {
+        group: "Cheap controls",
+        lab: "Qwen",
+        label: "Qwen3.5 9B",
+        value: "Qwen/Qwen3.5-9B",
+        note: "Small, cheap Qwen control for UI testing.",
+      },
     ],
     maxTopLogprobs: 20,
     supportsStreaming: false,
@@ -150,6 +261,7 @@ const DOC_KEY = "baseWorkbench.document.v2";
 const DOC_ID_KEY = "baseWorkbench.documentId.v1";
 const CACHE_INDEX_KEY = "baseWorkbench.cacheIndex.v1";
 const CACHE_PREFIX = "baseWorkbench.cache.v1.";
+const CUSTOM_MODEL_VALUE = "__custom__";
 const CACHE_MAX_BYTES = 4_200_000;
 const CACHE_MAX_ENTRIES = 180;
 const SAMPLE_DEBOUNCE_MS = 420;
@@ -228,6 +340,7 @@ function scoreState(tokens, activeIndex) {
 
 const el = {
   provider: document.querySelector("#provider"),
+  modelPreset: document.querySelector("#model-preset"),
   model: document.querySelector("#model"),
   apiKey: document.querySelector("#api-key"),
   toggleKey: document.querySelector("#toggle-key"),
@@ -323,8 +436,17 @@ function attachEvents() {
     updateAnchor({ forceSample: false });
   });
 
+  el.modelPreset.addEventListener("change", () => {
+    handleModelPresetChange();
+  });
+
+  el.model.addEventListener("input", () => {
+    syncModelPresetToValue();
+  });
+
   for (const input of [el.model, el.sampleCount, el.sampleTokens, el.temperature, el.topP, el.minP, el.topLogprobs, el.autoSample]) {
     input.addEventListener("change", () => {
+      if (input === el.model) syncModelPresetToValue();
       persistPreferences();
       abortSampling("settings change");
       updateAnchor({ forceSample: false });
@@ -1040,23 +1162,76 @@ function syncProviderDefaults(forceModel) {
   if (forceModel || !el.model.value) {
     el.model.value = provider.defaultModel;
   }
-  ensureModelDatalist(provider);
+  renderModelPicker(provider);
+  syncModelPresetToValue();
 }
 
-function ensureModelDatalist(provider) {
-  const id = `${el.provider.value}-models`;
-  let list = document.querySelector(`#${id}`);
-  if (!list) {
-    list = document.createElement("datalist");
-    list.id = id;
-    document.body.appendChild(list);
+function renderModelPicker(provider) {
+  const byGroup = new Map();
+  for (const item of modelCatalog(provider)) {
+    const group = item.group || "Models";
+    if (!byGroup.has(group)) byGroup.set(group, []);
+    byGroup.get(group).push(item);
   }
-  list.replaceChildren(...provider.modelHints.map((hint) => {
-    const option = document.createElement("option");
-    option.value = hint;
-    return option;
+
+  const nodes = [];
+  for (const [group, items] of byGroup.entries()) {
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = group;
+    optgroup.append(...items.map((item) => {
+      const option = document.createElement("option");
+      option.value = item.value;
+      option.textContent = modelOptionLabel(item);
+      option.title = item.note || item.value;
+      return option;
+    }));
+    nodes.push(optgroup);
+  }
+
+  const customOption = document.createElement("option");
+  customOption.value = CUSTOM_MODEL_VALUE;
+  customOption.textContent = "Custom model id";
+  nodes.push(customOption);
+  el.modelPreset.replaceChildren(...nodes);
+}
+
+function handleModelPresetChange() {
+  const value = el.modelPreset.value;
+  if (value === CUSTOM_MODEL_VALUE) {
+    el.model.focus();
+    return;
+  }
+
+  const item = catalogItemForValue(value);
+  el.model.value = item?.value || value;
+  syncModelPresetToValue();
+  persistPreferences();
+  abortSampling("model change");
+  updateAnchor({ forceSample: false });
+}
+
+function syncModelPresetToValue() {
+  const value = el.model.value.trim();
+  const item = catalogItemForValue(value);
+  el.modelPreset.value = item ? item.value : CUSTOM_MODEL_VALUE;
+  el.model.title = item?.note || value || "Paste any provider model id.";
+}
+
+function catalogItemForValue(value) {
+  return modelCatalog(getProvider()).find((item) => item.value === value);
+}
+
+function modelCatalog(provider) {
+  if (Array.isArray(provider.modelCatalog)) return provider.modelCatalog;
+  return (provider.modelHints || []).map((hint) => ({
+    group: "Models",
+    label: hint,
+    value: hint,
   }));
-  el.model.setAttribute("list", id);
+}
+
+function modelOptionLabel(item) {
+  return item.lab ? `${item.lab} - ${item.label}` : item.label;
 }
 
 function settingsFingerprint() {

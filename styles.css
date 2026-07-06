@@ -163,6 +163,23 @@ select {
   padding: 6px 9px;
 }
 
+.model-control {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 8px;
+  min-width: 0;
+}
+
+.model-control input,
+.model-control select {
+  min-width: 0;
+}
+
+.model-control input {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
 .icon-button {
   width: 36px;
   padding: 0;
@@ -484,6 +501,10 @@ button:focus-visible {
 
   .provider-strip {
     grid-template-columns: minmax(116px, 0.85fr) minmax(180px, 1fr) minmax(160px, 1fr) 36px;
+  }
+
+  .model-control {
+    grid-template-columns: 1fr;
   }
 
   .workbench {
